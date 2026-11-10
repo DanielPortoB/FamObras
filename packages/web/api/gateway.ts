@@ -37,10 +37,11 @@ function authConfig() {
 
 export default {
   async fetch(request: Request) {
-    const { pathname } = new URL(request.url);
+    const incomingUrl = new URL(request.url);
+    const routedPath = (incomingUrl.searchParams.get("__api_path") ?? "").replace(/^\/+/, "");
     const { password, secret } = authConfig();
 
-    if (pathname === "/api/auth/login" && request.method === "POST") {
+    if (routedPath === "auth/login" && request.method === "POST") {
       if (!password || !secret) return json({ error: "A proteção do app ainda não foi configurada." }, 503);
       let body: { password?: string };
       try {
@@ -63,12 +64,12 @@ export default {
       );
     }
 
-    if (pathname === "/api/auth/session" && request.method === "GET") {
+    if (routedPath === "auth/session" && request.method === "GET") {
       if (!password || !secret) return json({ error: "A proteção do app ainda não foi configurada." }, 503);
       return hasSession(request, secret) ? json({ authenticated: true }) : json({ authenticated: false }, 401);
     }
 
-    if (pathname === "/api/auth/logout" && request.method === "POST") {
+    if (routedPath === "auth/logout" && request.method === "POST") {
       return json(
         { ok: true },
         200,
@@ -76,10 +77,15 @@ export default {
       );
     }
 
+    if (!routedPath) return json({ error: "Rota da API não encontrada." }, 404);
     if (!password || !secret) return json({ error: "A proteção do app ainda não foi configurada." }, 503);
     if (!hasSession(request, secret)) return json({ error: "Sessão expirada. Entre novamente." }, 401);
 
+    const apiUrl = new URL(request.url);
+    apiUrl.pathname = `/api/${routedPath}`;
+    apiUrl.searchParams.delete("__api_path");
+    const apiRequest = new Request(apiUrl, request);
     const { default: app } = await import("../src/api/index");
-    return app.fetch(request);
+    return app.fetch(apiRequest);
   },
 };
