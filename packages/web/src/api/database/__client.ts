@@ -5,8 +5,9 @@ import { createClient } from "@libsql/client";
 import * as schema from "./schema";
 
 const client = createClient({
-  url: process.env.DATABASE_URL!,
-  authToken: process.env.DATABASE_AUTH_TOKEN,
+  // Accept both the app's generic names and Turso's Vercel integration names.
+  url: process.env.DATABASE_URL ?? process.env.TURSO_DATABASE_URL!,
+  authToken: process.env.DATABASE_AUTH_TOKEN ?? process.env.TURSO_AUTH_TOKEN,
 });
 
 export const db = drizzle(client, { schema });
