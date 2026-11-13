@@ -13,6 +13,18 @@ DATABASE_AUTH_TOKEN=...
 
 Com o Bun instalado, rode `bun run db:push` na pasta raiz do repositório para criar as tabelas. O arquivo `.env` está no `.gitignore`; não o envie ao GitHub.
 
+### Diagnóstico do cadastro de funcionários
+
+O código aceita também `TURSO_DATABASE_URL` e `TURSO_AUTH_TOKEN`, usados pela integração da Vercel. A aplicação e o Drizzle Kit usam a mesma precedência: `DATABASE_*` primeiro, `TURSO_*` como alternativa. Confira se apontam para o banco do ambiente desejado.
+
+Em `packages/web`, execute `bun run db:check:employees`. Esse diagnóstico é somente leitura: verifica as três tabelas de funcionários, as colunas esperadas e a restrição de CPF único, sem exibir dados pessoais ou credenciais. Configure as credenciais diretamente no seu ambiente; não as compartilhe em chats ou no repositório.
+
+Este repositório não contém migrations geradas em `packages/web/drizzle`. O comando `db:migrate` sozinho não cria nem atualiza o schema atual. O fluxo existente é `db:push`; publicar na Vercel não atualiza as tabelas automaticamente. Se o diagnóstico indicar estrutura ausente ou antiga, faça backup do banco e revise o plano de `db:push` antes de confirmá-lo, sem usar `--force`. Para um banco já existente, não aplique uma migration inicial de criação sem antes reconciliar seu schema e histórico.
+
+A mensagem de CPF duplicado deve corresponder apenas à violação de `employees.cpf`. Falhas de conexão, autenticação ou schema devem aparecer como falha de carregamento/gravação; os logs `employees.list` e `employees.save` registram somente o código do erro do banco. Cadastro e edição gravam o funcionário, integrações e NRs na mesma transação para evitar cadastros parciais.
+
+Validação local: em `packages/web`, execute `bun test tests`. Os testes usam um banco temporário isolado, sem acessar o Turso. Para validação visual de um Preview, configure senha/segredo de acesso próprios para Preview e um banco de teste separado.
+
 ## 2. Configure o projeto da Vercel
 
 Em **Settings → General**, defina **Root Directory** como `packages/web`. Depois, em **Settings → Environment Variables**, adicione para **Production**:

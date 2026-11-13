@@ -29,7 +29,7 @@ const EMPTY: Form = { name: "", role: "", cpf: "", phone: "", city: "", active: 
 const EMPTY_INT: Integration = { client: "", unit: "", integrationDate: "", validUntil: "" };
 
 export default function EmployeesPage() {
-  const { data: employees = [], isLoading } = useEmployees();
+  const { data: employees = [], isLoading, isError, refetch, isFetching } = useEmployees();
   const { create, update, remove } = useEmployeeMutations();
   const [form, setForm] = useState<Form>(EMPTY);
   const [search, setSearch] = useState("");
@@ -273,7 +273,7 @@ export default function EmployeesPage() {
 
         <Card>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-bold">Cadastrados ({employees.length})</h2>
+            <h2 className="text-lg font-bold">{isError ? "Funcionários" : `Cadastrados (${employees.length})`}</h2>
             <input
               aria-label="Buscar"
               className={inputCls + " max-w-xs"}
@@ -282,7 +282,14 @@ export default function EmployeesPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          {isLoading ? (
+          {isError ? (
+            <div role="alert">
+              <ErrorBox error={new Error("Não foi possível carregar os funcionários. Tente novamente.")} />
+              <button type="button" className={btnGhost} disabled={isFetching} onClick={() => void refetch()}>
+                {isFetching ? "Carregando..." : "Tentar novamente"}
+              </button>
+            </div>
+          ) : isLoading ? (
             <p className="text-sm text-muted-foreground">Carregando...</p>
           ) : filtered.length === 0 ? (
             <Empty>{employees.length === 0 ? "Nenhum funcionário cadastrado ainda." : "Nenhum resultado para a busca."}</Empty>
